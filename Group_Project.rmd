@@ -1,0 +1,54 @@
+---
+title: "Final Project"
+author: "Group M"
+date: "2023-04-24"
+output: pdf_document
+---
+
+```{r setup, include=FALSE,echo = FALSE}
+# knitr::opts_knit$set(root.dir = '<Your directory>')
+library(igraph)
+library(network)
+library(statnet)
+library(sna)
+library(intergraph)
+library(RColorBrewer)
+
+library(ergm)
+```
+
+```{r}
+# read the edgelist.csv
+hiv_edges <- read.csv("edgelist.csv", header = T, stringsAsFactors = F)
+
+# read the nodes CSV file
+hiv_nodes <- read.csv("nodes.csv", header = T, stringsAsFactors = F)
+```
+
+```{r}
+# creae a network, directed, weighted, with edgelist
+hiv_net <- network(hiv_edges, matrix.type="edgelist",directed = T, loops = T)
+```
+
+```{r plot1, cache=TRUE}
+plot(hiv_net, vertex.col = 'red', displaylabels = F,vertex.cex = 0.5)
+```
+```{r}
+# read the edgelist.csv
+hiv_edges3 <- read.csv("edgelist3.csv", header = T, stringsAsFactors = F)
+
+# read the nodes CSV file
+hiv_nodes3 <- read.csv("nodes3.csv", header = T, stringsAsFactors = F)
+
+# creae a network, directed, weighted, with edgelist
+hiv_net3 <- network(hiv_edges3, matrix.type="edgelist",directed = T, loops = T)
+
+```
+
+```{r plot2, cache=TRUE}
+plot(hiv_net3, vertex.col = 'red', displaylabels = F,vertex.cex = 0.7)
+```
+
+
+
+
