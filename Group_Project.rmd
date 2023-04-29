@@ -1,7 +1,7 @@
 ---
 title: "Final Project"
 author: "Group M"
-date: "2023-04-24"
+date: "2023-04-30"
 output: pdf_document
 ---
 
@@ -17,38 +17,171 @@ library(RColorBrewer)
 library(ergm)
 ```
 
+# Read the data
 ```{r}
-# read the edgelist.csv
-hiv_edges <- read.csv("edgelist.csv", header = T, stringsAsFactors = F)
+# read the edgelist3.csv
+hiv_edges <- read.csv("edgelist_cleaned.csv", header = T, stringsAsFactors = F)
 
-# read the nodes CSV file
-hiv_nodes <- read.csv("nodes.csv", header = T, stringsAsFactors = F)
-```
+# read the nodes3 CSV file
+hiv_nodes <- read.csv("nodes_cleaned.csv", header = T, stringsAsFactors = F)
 
-```{r}
 # creae a network, directed, weighted, with edgelist
 hiv_net <- network(hiv_edges, matrix.type="edgelist",directed = T, loops = T)
-```
-
-```{r plot1, cache=TRUE}
-plot(hiv_net, vertex.col = 'red', displaylabels = F,vertex.cex = 0.5)
-```
-```{r}
-# read the edgelist.csv
-hiv_edges3 <- read.csv("edgelist3.csv", header = T, stringsAsFactors = F)
-
-# read the nodes CSV file
-hiv_nodes3 <- read.csv("nodes3.csv", header = T, stringsAsFactors = F)
-
-# creae a network, directed, weighted, with edgelist
-hiv_net3 <- network(hiv_edges3, matrix.type="edgelist",directed = T, loops = T)
 
 ```
 
+# Plot
 ```{r plot2, cache=TRUE}
-plot(hiv_net3, vertex.col = 'red', displaylabels = F,vertex.cex = 0.7)
+plot(hiv_net, vertex.col = 'red', displaylabels = F,vertex.cex = 0.7)
 ```
 
+# five-number summary
+```{r}
+network.size(hiv_net) # find the size value
+gden(hiv_net) # find the density
+components(hiv_net) # Components
+diameter( asIgraph (hiv_net) ) # find the diameter
+gtrans(hiv_net,mode="graph") # find the clustering coefficient
+```
+
+```{r}
+# Ensure that the node IDs in the network object match the order in the hiv_nodes dataframe
+hiv_net %v% "ID" <- as.character(hiv_nodes$ID)
+
+# Assign node attributes to the hiv_net network object
+hiv_net %v% "RACE" <- hiv_nodes$RACE
+hiv_net %v% "SEX" <- hiv_nodes$SEX
+hiv_net %v% "BEHAV" <- hiv_nodes$BEHAV
+hiv_net %v% "AGE" <- hiv_nodes$AGE
+hiv_net %v% "DISABLE" <- hiv_nodes$DISABLE
+hiv_net %v% "UNEMP" <- hiv_nodes$UNEMP
+hiv_net %v% "STREETS" <- hiv_nodes$STREETS
+hiv_net %v% "EDUC" <- hiv_nodes$EDUC
+
+```
+
+```{r}
+summary(hiv_net,print.adj=FALSE)
+```
+
+# centrality measure
+```{r}
+# Out-degree centrality
+out_degree_centrality <- igraph::degree(asIgraph (hiv_net), mode="out")
+
+# Betweenness centrality
+betweenness_centrality <- igraph::betweenness(asIgraph (hiv_net), directed = TRUE, normalized = TRUE)
+
+# Eigenvector centrality
+eigenvector_centrality <- igraph::evcent(asIgraph (hiv_net), directed = TRUE)$vector
+
+hiv_nodes$DegreeCentrality <- out_degree_centrality
+hiv_nodes$BetweennessCentrality <- betweenness_centrality
+hiv_nodes$EigenvectorCentrality <- eigenvector_centrality
+
+attributes <- c("RACE", "SEX", "BEHAV", "AGE", "DISABLE", "UNEMP", "STREETS", "EDUC")
+centrality_measures <- c("DegreeCentrality", "BetweennessCentrality", "EigenvectorCentrality")
+
+for (attr in attributes) {
+  cat("Centrality measures for", attr, ":\n")
+  cat("---------------------------\n")
+  attribute_groups <- split(hiv_nodes, hiv_nodes[[attr]])
+  for (group in names(attribute_groups)) {
+    cat("Group", group, ":\n")
+    cat("  Mean Degree Centrality: ", mean(attribute_groups[[group]]$DegreeCentrality), "\n")
+    cat("  Mean Betweenness Centrality: ", mean(attribute_groups[[group]]$BetweennessCentrality), "\n")
+    cat("  Mean Eigenvector Centrality: ", mean(attribute_groups[[group]]$EigenvectorCentrality), "\n\n")
+  }
+  cat("\n")
+}
 
 
+```
+
+# community detection
+```{r}
+# Community detection using infomap method 
+set.seed(123)
+hiv_net_ig <- asIgraph(hiv_net)
+community <- igraph::cluster_infomap(hiv_net_ig , e.weights = E(hiv_net_ig)$Weight)
+V(hiv_net_ig)$community <- membership(community)
+
+communities <- unique(V(hiv_net_ig)$community)
+community_summary <- data.frame(community = communities,
+                                avg_in_degree = length(communities),
+                                avg_out_degree = length(communities),
+                                avg_edge_weight = length(communities))
+
+for (comm in communities) {
+  nodes_in_community <- which(V(hiv_net_ig)$community == comm)
+  
+  community_subgraph <- induced_subgraph(hiv_net_ig, nodes_in_community)
+  
+  community_summary[comm, "avg_in_degree"] <- mean(igraph::degree(community_subgraph, mode = "in"))
+  community_summary[comm, "avg_out_degree"] <- mean(igraph::degree(community_subgraph, mode = "out"))
+  
+  edge_weights <- E(community_subgraph)$Weight
+  community_summary[comm, "avg_edge_weight"] <- mean(edge_weights)
+}
+
+# Sort the data frame by the average in-degree, average out-degree, and average edge weight
+community_summary_sorted <- community_summary[order(community_summary$avg_in_degree, community_summary$avg_out_degree, community_summary$avg_edge_weight, decreasing=TRUE), ]
+
+# Print the top 10 communities
+print(community_summary_sorted[1:10, ])
+```
+# characteristics of the top 10 communities
+
+```{r}
+# Get the top 10 communities
+top_communities <- community_summary_sorted[1:10, "community"]
+
+# Define a function to calculate proportions of each attribute
+attribute_proportions <- function(attribute, community_nodes) {
+  attribute_values <- vertex_attr(hiv_net_ig, attribute, index = V(hiv_net_ig))[community_nodes]
+  prop_table <- prop.table(table(attribute_values))
+  return(prop_table)
+}
+
+# Create a data frame to store the proportions of each attribute in each community
+attributes <- c("RACE", "SEX", "BEHAV", "AGE", "DISABLE", "UNEMP", "STREETS", "EDUC")
+top_community_characteristics <- data.frame(community = numeric(),
+                                            attribute = character(),
+                                            category = character(),
+                                            proportion = numeric())
+
+# Calculate the proportions for each attribute in each top community
+for (comm in top_communities) {
+  nodes_in_community <- c(which(V(hiv_net_ig)$community == comm))
+  
+  for (attr in attributes) {
+    prop_table <- attribute_proportions(attr, nodes_in_community)
+    max_prop <- max(prop_table)
+    max_prop_category <- names(prop_table)[which.max(prop_table)]
+    
+    new_row <- data.frame(community = comm,
+                          attribute = attr,
+                          category = max_prop_category,
+                          proportion = max_prop)
+    
+    top_community_characteristics <- rbind(top_community_characteristics, new_row)
+  }
+}
+
+print(top_community_characteristics)
+
+```
+```{r,results='hide'}
+library(tidyr)
+library(dplyr)
+
+# Reshape the data frame to have one row per community and attribute category
+wide_top_community_characteristics <- top_community_characteristics %>%
+  pivot_wider(names_from = attribute, values_from = c(category, proportion), names_sep = "_",
+              names_glue = "{attribute}_{.value}") %>%
+  select(community, matches("cate"), matches("prop"))
+
+print(wide_top_community_characteristics)
+
+```
 
