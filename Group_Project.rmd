@@ -130,6 +130,7 @@ community_summary_sorted <- community_summary[order(community_summary$avg_in_deg
 # Print the top 10 communities
 print(community_summary_sorted[1:10, ])
 ```
+
 # characteristics of the top 10 communities
 
 ```{r}
@@ -171,6 +172,7 @@ for (comm in top_communities) {
 print(top_community_characteristics)
 
 ```
+
 ```{r,results='hide'}
 library(tidyr)
 library(dplyr)
@@ -184,4 +186,138 @@ wide_top_community_characteristics <- top_community_characteristics %>%
 print(wide_top_community_characteristics)
 
 ```
+
+# ERGM
+```{r, warning=FALSE}
+# null model
+null_model <- ergm(hiv_net ~ edges)
+summary(null_model) 
+```
+```{r,cache=TRUE}
+reciprocity_model <- ergm(hiv_net ~ edges + mutual)
+summary(reciprocity_model)
+```
+```{r}
+# Fit an ERGM with the selected node attributes
+full_model <- ergm(hiv_net ~ edges + nodematch("RACE") + nodematch("SEX") + nodematch("BEHAV") + nodematch("AGE") + nodematch("DISABLE") + nodematch("UNEMP") + nodematch("STREETS") + nodematch("EDUC"), control = control.ergm(MCMC.burnin = 5000, MCMC.interval = 1000))
+
+summary(full_model)
+```
+
+```{r}
+# Extract the coefficients from the ERGM fit
+coefficients_full <- coef(full_model)
+
+# Sort the coefficients by their absolute values to determine the strongest impact on network formation and HIV transmission
+sorted_coefficients_full <- coefficients_full[order(abs(coefficients_full), decreasing = TRUE)]
+
+print(sorted_coefficients_full)
+```
+# predictive model
+```{r}
+in_degree <- igraph::degree(hiv_net_ig, mode = "in")
+dens <- density(in_degree)
+cumulative_density <- cumsum(dens$y)/sum(dens$y)
+threshold <- dens$x[which.min(abs(cumulative_density-0.5))]
+hist(in_degree,freq=F)
+abline(v = threshold, col = "red")
+
+```
+
+```{r}
+in_degree_binary <- ifelse(in_degree >= threshold, 1, 0)
+
+# Create a data frame with the in_degree_binary and hiv_nodes
+hiv_nodes_df <- hiv_nodes
+hiv_nodes_df$in_degree <- in_degree_binary
+hiv_nodes_df
+```
+```{r}
+# Load the "caret" package for model training
+library(caret)
+library(ggplot2)
+
+# Prepare the data for training and testing
+set.seed(123)
+trainIndex <- createDataPartition(hiv_nodes_df$in_degree, p = 0.7, list = FALSE)
+trainData <- hiv_nodes_df[trainIndex, ]
+testData <- hiv_nodes_df[-trainIndex, ]
+
+# Create a logistic regression model using the glm() function
+model <- glm(in_degree ~ .- ID, data = trainData, family = "binomial")
+
+# Print the model summary
+summary(model)
+```
+```{r}
+# Overall, the model indicates that BetweennessCentrality and EigenvectorCentrality are significantly associated with in_degree, as they have p-values less than 0.05. The other predictor variables do not appear to have a significant effect on in_degree.
+```
+
+# k-shell decomposition
+```{r}
+# Calculate k-shell values for each node
+k_shells <- coreness(hiv_net_ig)
+V(hiv_net_ig)$k_shell <- k_shells
+
+# Find the maximum k-shell value
+max_k_shell <- max(k_shells)
+
+# Extract the nodes with the highest k-shell value
+key_individuals_k_shell <- V(hiv_net_ig)[k_shell == max_k_shell]
+
+# Print the key individuals
+print(key_individuals_k_shell)
+
+```
+
+# snowball sampling
+```{r}
+# Start with a seed node (choose a node ID from your dataset)
+seed_node <- 1
+
+# Define the number of steps (depth) for the snowball sampling
+steps <- 2
+
+# Perform snowball sampling
+snowball_sample <- igraph::neighborhood(hiv_net_ig, order = steps, nodes = seed_node, mode = "all")
+
+# Extract the nodes in the snowball sample
+key_individuals_snowball <- V(hiv_net_ig)[snowball_sample[[1]]]
+
+# Print the key individuals
+print(key_individuals_snowball)
+
+```
+# Burt's constraint
+```{r}
+# Calculate Burt's constraint for each node
+burt_constraint <- igraph::constraint(hiv_net_ig, nodes = V(hiv_net_ig), weights = E(hiv_net_ig)$Weight)
+V(hiv_net_ig)$constraint <- burt_constraint
+
+# Create a data frame with node attributes and Burt's constraint values
+node_attributes_and_constraint <- data.frame(node_id = as.vector(V(hiv_net_ig)),
+                                             RACE = V(hiv_net_ig)$RACE,
+                                             SEX = V(hiv_net_ig)$SEX,
+                                             BEHAV = V(hiv_net_ig)$BEHAV,
+                                             AGE = V(hiv_net_ig)$AGE,
+                                             DISABLE = V(hiv_net_ig)$DISABLE,
+                                             UNEMP = V(hiv_net_ig)$UNEMP,
+                                             STREETS = V(hiv_net_ig)$STREETS,
+                                             EDUC = V(hiv_net_ig)$EDUC,
+                                             constraint = burt_constraint)
+
+
+# Print the data frame
+print(node_attributes_and_constraint)
+
+```
+```{r}
+# Find the nodes with the lowest constraint values (top brokers)
+top_brokers <- head(node_attributes_and_constraint[order(node_attributes_and_constraint$constraint), ], n = 10)
+
+# Print the top brokers
+print(top_brokers)
+```
+
+
 
