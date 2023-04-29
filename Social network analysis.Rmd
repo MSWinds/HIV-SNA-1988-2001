@@ -1,0 +1,163 @@
+
+
+
+
+
+```{r setup, include=FALSE,echo = FALSE}
+# knitr::opts_knit$set(root.dir = '<Your directory>')
+library(igraph)
+library(network)
+library(statnet)
+library(sna)
+library(intergraph)
+library(RColorBrewer)
+
+library(ergm)
+```
+
+
+```{r}
+
+# The Network Analysis ‘Five-Number Summary’
+
+
+# 1- Size
+network.size(hiv_net3)
+summary(hiv_net3,print.adj=FALSE)
+
+
+# 2- Density
+gden(hiv_net3)
+
+# 3-Components
+components(hiv_net3)
+
+# 4-Diameter
+lgc <- component.largest(hiv_net3,result="graph")
+gd <- geodist(lgc)
+max(gd$gdist)
+
+# 5-Clustering Coefficient
+gtrans(hiv_net3,mode="graph")
+
+
+```
+
+
+```{r}
+```
+
+
+```{r}
+df.prom <- data.frame(deg = degree(hiv_net3),
+cls = closeness(hiv_net3), 
+btw = betweenness(hiv_net3), evc = evcent(hiv_net3),
+inf = infocent(hiv_net3), flb = flowbet(hiv_net3))
+
+
+cor(df.prom)
+
+
+
+
+
+# create a graph object from the edge list
+s <- graph_from_data_frame(edgelist3, directed = TRUE)
+
+# calculate the number of nodes in the network
+num_nodes <- vcount(s)
+
+# calculate the number of edges in the network
+num_edges <- ecount(s)
+
+# calculate the density of the network
+density <- graph.density(g)
+
+# calculate the average degree of the nodes in the network
+avg_degree <- mean(degree(hiv_net3))
+
+# calculate the clustering coefficient of the network
+clustering_coefficient <- transitivity(g)
+cat("Number of Nodes:", num_nodes, "\n")
+cat("Number of Edges:", num_edges, "\n")
+cat("Density:", density, "\n")
+cat("Average Degree:", avg_degree, "\n")
+cat("Clustering Coefficient:", clustering_coefficient, "\n")
+
+degree_centrality <- degree(hiv_net3)
+
+summary(degree_centrality) # degree centrality
+
+betweenness_centrality <- betweenness(hiv_net3)
+
+summary(betweenness_centrality)  # betweenness centrality
+
+closeness_centrality <- closeness(hiv_net3)
+
+summary(closeness_centrality)   # closeness centrality
+```
+
+
+
+
+
+
+```{r}
+i_news_s <- asIgraph(hiv_net3)
+cw <- cluster_walktrap(i_news_s)
+modularity(cw)
+membership(cw)
+ceb <- cluster_edge_betweenness(i_news_s)
+modularity(ceb)
+membership(ceb)
+cs <- cluster_spinglass(i_news_s)
+modularity(cs)
+membership(cs)
+cfg <- cluster_fast_greedy(i_news_s)
+modularity(cfg)
+membership(cfg)
+clp <- cluster_label_prop(i_news_s)
+modularity(clp)
+membership(clp)
+cle <- cluster_leading_eigen(i_news_s)
+modularity(cle)
+membership(cle)
+cl <- cluster_louvain(i_news_s)
+modularity(cl)
+membership(cl)
+co <- cluster_optimal(i_news_s)
+modularity(co)
+membership(co)
+
+```
+```{r}
+```
+
+
+```{r}
+
+i_news_s <- asIgraph(hiv_net3) # Convert to igraph with directed edges
+wt <- cluster_walktrap(i_news_s)
+eb <-  cluster_edge_betweenness(i_news_s, directed = TRUE) # Use directed version of the algorithm
+
+
+
+df_cda <- data.frame(
+  row.names = c('Walktrap','Edge-betweenness'),
+  community_n = c(length(wt), length(eb) ),
+  moda = c(modularity(wt), modularity(eb))
+)
+df_cda 
+
+```
+
+
+
+
+
+
+
+
+reciprocity_model <- ergm(hiv_net3 ~ edges + mutual)
+summary(reciprocity_model)
+
