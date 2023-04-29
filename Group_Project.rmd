@@ -2,7 +2,10 @@
 title: "Final Project"
 author: "Group M"
 date: "2023-04-30"
-output: pdf_document
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE,echo = FALSE}
@@ -230,7 +233,7 @@ in_degree_binary <- ifelse(in_degree >= threshold, 1, 0)
 # Create a data frame with the in_degree_binary and hiv_nodes
 hiv_nodes_df <- hiv_nodes
 hiv_nodes_df$in_degree <- in_degree_binary
-hiv_nodes_df
+hiv_nodes_df[1:10, ] # show only first 10 rows
 ```
 ```{r}
 # Load the "caret" package for model training
@@ -307,8 +310,8 @@ node_attributes_and_constraint <- data.frame(node_id = as.vector(V(hiv_net_ig)),
                                              constraint = burt_constraint)
 
 
-# Print the data frame
-print(node_attributes_and_constraint)
+# Print the data frame with first 10 rows
+print(node_attributes_and_constraint[1:10, ])
 
 ```
 ```{r}
