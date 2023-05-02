@@ -21,6 +21,7 @@ library(ergm)
 ```
 
 # Read the data
+
 ```{r}
 # read the edgelist3.csv
 hiv_edges <- read.csv("edgelist_cleaned.csv", header = T, stringsAsFactors = F)
@@ -34,11 +35,13 @@ hiv_net <- network(hiv_edges, matrix.type="edgelist",directed = T, loops = T)
 ```
 
 # Plot
+
 ```{r plot2, cache=TRUE}
 plot(hiv_net, vertex.col = 'red', displaylabels = F,vertex.cex = 0.7)
 ```
 
 # five-number summary
+
 ```{r}
 network.size(hiv_net) # find the size value
 gden(hiv_net) # find the density
@@ -68,6 +71,7 @@ summary(hiv_net,print.adj=FALSE)
 ```
 
 # centrality measure
+
 ```{r}
 # Out-degree centrality
 out_degree_centrality <- igraph::degree(asIgraph (hiv_net), mode="out")
@@ -102,6 +106,7 @@ for (attr in attributes) {
 ```
 
 # community detection
+
 ```{r}
 # Community detection using infomap method 
 set.seed(123)
@@ -191,15 +196,18 @@ print(wide_top_community_characteristics)
 ```
 
 # ERGM
+
 ```{r, warning=FALSE}
 # null model
 null_model <- ergm(hiv_net ~ edges)
 summary(null_model) 
 ```
+
 ```{r,cache=TRUE}
 reciprocity_model <- ergm(hiv_net ~ edges + mutual)
 summary(reciprocity_model)
 ```
+
 ```{r}
 # Fit an ERGM with the selected node attributes
 full_model <- ergm(hiv_net ~ edges + nodematch("RACE") + nodematch("SEX") + nodematch("BEHAV") + nodematch("AGE") + nodematch("DISABLE") + nodematch("UNEMP") + nodematch("STREETS") + nodematch("EDUC"), control = control.ergm(MCMC.burnin = 5000, MCMC.interval = 1000))
@@ -216,7 +224,9 @@ sorted_coefficients_full <- coefficients_full[order(abs(coefficients_full), decr
 
 print(sorted_coefficients_full)
 ```
+
 # predictive model
+
 ```{r}
 in_degree <- igraph::degree(hiv_net_ig, mode = "in")
 dens <- density(in_degree)
@@ -235,6 +245,7 @@ hiv_nodes_df <- hiv_nodes
 hiv_nodes_df$in_degree <- in_degree_binary
 hiv_nodes_df[1:10, ] # show only first 10 rows
 ```
+
 ```{r}
 # Load the "caret" package for model training
 library(caret)
@@ -252,11 +263,13 @@ model <- glm(in_degree ~ .- ID, data = trainData, family = "binomial")
 # Print the model summary
 summary(model)
 ```
+
 ```{r}
 # Overall, the model indicates that BetweennessCentrality and EigenvectorCentrality are significantly associated with in_degree, as they have p-values less than 0.05. The other predictor variables do not appear to have a significant effect on in_degree.
 ```
 
 # k-shell decomposition
+
 ```{r}
 # Calculate k-shell values for each node
 k_shells <- coreness(hiv_net_ig)
@@ -274,6 +287,7 @@ print(key_individuals_k_shell)
 ```
 
 # snowball sampling
+
 ```{r}
 # Start with a seed node (choose a node ID from your dataset)
 seed_node <- 1
@@ -291,7 +305,9 @@ key_individuals_snowball <- V(hiv_net_ig)[snowball_sample[[1]]]
 print(key_individuals_snowball)
 
 ```
+
 # Burt's constraint
+
 ```{r}
 # Calculate Burt's constraint for each node
 burt_constraint <- igraph::constraint(hiv_net_ig, nodes = V(hiv_net_ig), weights = E(hiv_net_ig)$Weight)
@@ -314,6 +330,7 @@ node_attributes_and_constraint <- data.frame(node_id = as.vector(V(hiv_net_ig)),
 print(node_attributes_and_constraint[1:10, ])
 
 ```
+
 ```{r}
 # Find the nodes with the lowest constraint values (top brokers)
 top_brokers <- head(node_attributes_and_constraint[order(node_attributes_and_constraint$constraint), ], n = 10)
@@ -321,6 +338,3 @@ top_brokers <- head(node_attributes_and_constraint[order(node_attributes_and_con
 # Print the top brokers
 print(top_brokers)
 ```
-
-
-
