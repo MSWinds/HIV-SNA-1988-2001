@@ -1,4 +1,8 @@
 # Unraveling HIV Transmission Networks: A Social Network Analysis Approach using ICPSR 22140 Data
+--------------------------------------------------------------------------------------------------
+
+## Our Team:
+Kaijie “Yuri” Yu,   Ahmad Alasmari,   Edward Segura-Tinoco,  Denise Escarcega,  Ghurdan Alghureid
 
 ## Utilized Tools
 - ![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white) 
