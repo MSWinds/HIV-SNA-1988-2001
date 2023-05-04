@@ -13,6 +13,8 @@ Kaijie “Yuri” Yu,   Ahmad Alasmari,   Edward Segura-Tinoco,  Denise Escarceg
 ## Introduction
 In our study, we aim to analyze the HIV transmission network to understand its structure, identify high-risk subgroups, and inform potential interventions. Our research will delve into various aspects, such as centrality measures, community detection, network models, predictive modeling, and identification of key individuals or groups, to provide a comprehensive understanding of the network and its implications on HIV transmission.
 
+<img src="https://user-images.githubusercontent.com/86252394/236147822-9c709024-b1e9-4b1a-81a9-43679827caea.png" alt="20230502104532" width="400" height="auto"> (Weighted out-degree)
+
 ## Research Questions
 1. What is the five-number summary of the network? How can we interpret them?
 2. How do centrality measures (degree, betweenness, eigenvector) differ across node attributes? Are certain subgroups more central in the network?
